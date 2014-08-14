@@ -4,6 +4,7 @@ require './lib/cashier'
 require './lib/customer'
 require './lib/checkout'
 require './lib/purchase'
+require 'pry'
 
 database_configurations = YAML::load(File.open('./db/config.yml'))
 development_configuration = database_configurations['development']
@@ -16,12 +17,32 @@ def welcome
     puts "Press [2] to login as a cashier."
     selection = gets.chomp.to_i
     if selection == 1
-      manager_menu
+      puts "Enter MGMT Password:"
+      pass = gets.chomp
+      if pass == "butta"
+        manager_menu
+      else
+        puts "Invalid Entry"
+        welcome
+      end
     elsif selection == 2
       puts "Please enter your name: "
       name = gets.chomp
       @current_cashier = Cashier.find_by({:name => name})
-      cashier_menu
+      if @current_cashier != nil
+        puts "Enter Password:"
+        pass = gets.chomp
+        if @current_cashier.password == pass
+          cashier_menu
+        else
+          puts "Invalid Password"
+          welcome
+        end
+      else
+        puts "Cashier does not exist."
+        welcome
+      end
+
     else
       puts "Invalid selection. Please try again."
     end
@@ -30,6 +51,7 @@ end
 
 def cashier_menu
   puts "Press [r] to ring up a customer."
+  puts "Press [l] to log out."
   puts "Press [x] to exit."
   selection = nil
   until selection == 'x'
@@ -37,6 +59,8 @@ def cashier_menu
     case selection
     when 'r'
       create_checkout
+    when 'l'
+      welcome
     end
   end
   puts "Bye bye!"
@@ -50,14 +74,23 @@ def create_checkout
 end
 
 def ring_up_customer
-  print_products
-  select_product
-  puts "How many #{@current_product.name}'s?"
-  quantity = gets.chomp.to_i
-  @current_purchase = Purchase.create({:checkout_id => @current_checkout.id, :product_id => @current_product.id, :quantity => quantity})
-  @current_checkout.purchases.each do |purchase|
-    puts purchase.product.name
-    puts purchase.quantity
+  loop do
+    print_products
+    select_product
+    puts "How many #{@current_product.name}'s?"
+    quantity = gets.chomp.to_i
+    @current_purchase = Purchase.create({:checkout_id => @current_checkout.id, :product_id => @current_product.id, :quantity => quantity})
+    binding.pry
+    @current_checkout.purchases.each do |purchase|
+      puts purchase.product.name
+      puts purchase.quantity
+    end
+    puts "Press 'p' to finish and let the customer pay, or any other key to continue."
+    input = gets.chomp
+    if input == 'p'
+      puts "congrats. you win."
+      cashier_menu
+    end
   end
 end
 
@@ -70,6 +103,7 @@ def manager_menu
     puts "Press [c] to create a cashier."
     puts "Press [lc] to list all the cashiers."
     puts "Press [ec] to edit a cashier."
+    puts "Press [l] to log out."
     puts "Press [x] to exit."
     selection = gets.chomp.downcase
     case selection
@@ -85,6 +119,8 @@ def manager_menu
       print_cashiers
     when 'ec'
       edit_cashier
+    when 'l'
+      welcome
     else
       if selection != 'x'
         puts "Invalid. You fail at life."
