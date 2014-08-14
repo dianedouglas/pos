@@ -1,6 +1,9 @@
 require 'active_record'
 require 'product'
 require 'cashier'
+require 'customer'
+require 'checkout'
+require 'purchase'
 
 
 ActiveRecord::Base.establish_connection(YAML::load(File.open('./db/config.yml'))["test"])

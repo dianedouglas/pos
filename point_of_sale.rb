@@ -1,6 +1,9 @@
 require 'active_record'
 require './lib/product'
 require './lib/cashier'
+require './lib/customer'
+require './lib/checkout'
+require './lib/purchase'
 
 database_configurations = YAML::load(File.open('./db/config.yml'))
 development_configuration = database_configurations['development']
@@ -8,10 +11,57 @@ ActiveRecord::Base.establish_connection(development_configuration)
 
 def welcome
   puts "Hi there! Welcome to our POS thingy."
-  main_menu
+  loop do
+    puts "Press [1] to login as store manager."
+    puts "Press [2] to login as a cashier."
+    selection = gets.chomp.to_i
+    if selection == 1
+      manager_menu
+    elsif selection == 2
+      puts "Please enter your name: "
+      name = gets.chomp
+      @current_cashier = Cashier.find_by({:name => name})
+      cashier_menu
+    else
+      puts "Invalid selection. Please try again."
+    end
+  end
 end
 
-def main_menu
+def cashier_menu
+  puts "Press [r] to ring up a customer."
+  puts "Press [x] to exit."
+  selection = nil
+  until selection == 'x'
+    selection = gets.chomp
+    case selection
+    when 'r'
+      create_checkout
+    end
+  end
+  puts "Bye bye!"
+  exit
+end
+
+def create_checkout
+  customer = Customer.create()
+  @current_checkout = Checkout.create({:date => Time.now, :cashier_id => @current_cashier.id, :customer_id => customer.id})
+  ring_up_customer
+end
+
+def ring_up_customer
+  print_products
+  select_product
+  puts "How many #{@current_product.name}'s?"
+  quantity = gets.chomp.to_i
+  @current_purchase = Purchase.create({:checkout_id => @current_checkout.id, :product_id => @current_product.id, :quantity => quantity})
+  @current_checkout.purchases.each do |purchase|
+    puts purchase.product.name
+    puts purchase.quantity
+  end
+end
+
+def manager_menu
   selection = nil
   until selection == 'x'
     puts "Press [p] to create a product."
@@ -120,7 +170,7 @@ def edit_cashier_menu
   end
       puts "Back we go!"
       sleep 1
-      main_menu
+      manager_menu
 
 end
 
@@ -197,9 +247,8 @@ def edit_menu
       end
       puts "Back we go!"
       sleep 1
-      main_menu
+      manager_menu
     end
   end
-
 end
 welcome
