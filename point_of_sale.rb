@@ -79,8 +79,8 @@ def ring_up_customer
     select_product
     puts "How many #{@current_product.name}'s?"
     quantity = gets.chomp.to_i
-    @current_purchase = Purchase.create({:checkout_id => @current_checkout.id, :product_id => @current_product.id, :quantity => quantity})
-    binding.pry
+    @current_checkout.purchases.create({:product => @current_product, :quantity => quantity})
+    # binding.pry
     @current_checkout.purchases.each do |purchase|
       puts purchase.product.name
       puts purchase.quantity
@@ -220,6 +220,7 @@ def create_product
 end
 
 def print_products
+  binding.pry
   Product.all.each do |prod|
     puts prod.name
     puts "$" + prod.price.to_s
@@ -235,7 +236,6 @@ def print_product
 end
 
 def select_product
-  print_products
   puts "Please type in a product name to select it."
   product_name = gets.chomp
   @current_product = Product.find_by({:name => product_name})
